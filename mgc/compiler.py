@@ -1,5 +1,6 @@
 """compiler.py: Compiles MGC files into a block of data that is ready to write
 to the GCI."""
+import random
 from pathlib import Path
 from . import logger, mgc_file
 from .logger import log
@@ -49,7 +50,8 @@ def compile(root_mgc_path, input_gci=None, silent=False, debug=False, nopack=Fal
     # Set root directory
     if root_mgc_path:
         root_mgc_path = Path(root_mgc_path).absolute()
-        mgc_file.tmp_directory = root_mgc_path.parent/"tmp"
+        random_suffix = "".join(chr(c) for c in random.choices(range(ord('A'), ord('Z')), k=6))
+        mgc_file.tmp_directory = root_mgc_path.parent/f"tmp_{random_suffix}"
         try:
             mgc_file.tmp_directory.mkdir(exist_ok=True)
         except FileNotFoundError:
