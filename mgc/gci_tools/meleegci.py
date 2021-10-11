@@ -100,7 +100,7 @@ class melee_gci(object):
                 arr_pos += 1
             ctr -= 1
             target_offset += 8
-        for i in range(1, 0xf):
+        for i in range(1, 0x10):
             x = new_checksum[i-1]
             y = new_checksum[i]
             if (x == y):
