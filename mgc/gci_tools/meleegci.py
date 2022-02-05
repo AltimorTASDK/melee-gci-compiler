@@ -114,8 +114,12 @@ class melee_gamedata(melee_gci):
         so you'll need another class for other types of save files. '''
 
     def get_raw_checksum(self, blknum):
-        """ Return checksum bytes for some block 0-10 """
+        """ Return checksum bytes for some block 0-10 or -1 for header """
         base_offset = 0x2040
+        if blknum == -1:
+            # header block
+            target_offset = 0x40 + 0x1e40
+            return self.raw_bytes[target_offset:target_offset + 0x10]
         if (blknum >= 0) and (blknum <= (self.blocksize()-1)):
             target_offset = base_offset + (blknum * 0x2000)
             return self.raw_bytes[target_offset:target_offset + 0x10]
@@ -123,10 +127,14 @@ class melee_gamedata(melee_gci):
             return None
 
     def set_raw_checksum(self, blknum, new_checksum):
-        """ Given some blknum 0-10 and a 0x10-byte bytearray, replace the
-            specified checksum bytes with the new bytes """
+        """ Given some blknum 0-10 or -1 for header and a 0x10-byte bytearray,
+            replace the specified checksum bytes with the new bytes """
         base_offset = 0x2040
-        if (blknum >= 0) and (blknum <= (self.blocksize() -1)):
+        if blknum == -1:
+            # header block
+            target_offset = 0x40 + 0x1e40
+            self.raw_bytes[target_offset:target_offset + 0x10] = new_checksum
+        elif (blknum >= 0) and (blknum <= (self.blocksize() -1)):
             target_offset = base_offset + (blknum * 0x2000)
             self.raw_bytes[target_offset:target_offset + 0x10] = new_checksum
         else:
@@ -134,11 +142,16 @@ class melee_gamedata(melee_gci):
 
 
     def checksum_block(self, blknum):
-        """ Given some block number 0-10, compute the checksum for the
-            associated data. Returns the raw checksum bytes. """
+        """ Given some block number 0-10 or -1 for header, compute the checksum
+            for the associated data. Returns the raw checksum bytes. """
         base_offset = 0x2050
         data_size = 0x1ff0
-        if (blknum >= 0) and (blknum <= (self.blocksize() - 1)):
+        if blknum == -1:
+            # header block
+            target_offset = 0x40
+            data_size = 0x1e40
+            return self._checksum(target_offset, data_size)
+        elif (blknum >= 0) and (blknum <= (self.blocksize() - 1)):
             target_offset = base_offset + (blknum * 0x2000)
             return self._checksum(target_offset, data_size)
         else:
@@ -153,19 +166,19 @@ class melee_gamedata(melee_gci):
 
         # Retrieve checksum values for all blocks
         current = []
-        for i in range(0, self.blocksize()-1):
+        for i in range(-1, self.blocksize()-1):
             current.append(self.get_raw_checksum(i))
 
         # Compute checksum values for all blocks
         computed = []
-        for i in range(0, self.blocksize()-1):
+        for i in range(-1, self.blocksize()-1):
             computed.append(self.checksum_block(i))
 
         # If current checksums don't match, write them back
-        for i in range(0, self.blocksize()-1):
-            if (current[i] != computed[i]):
+        for i in range(-1, self.blocksize()-1):
+            if (current[i + 1] != computed[i + 1]):
                 log('DEBUG', "Block {} checksum mismatch, fixing ..".format(i))
-                self.set_raw_checksum(i, computed[i])
+                self.set_raw_checksum(i, computed[i + 1])
             else:
                 log('DEBUG', "Block {} checksum unchanged".format(i))
 
