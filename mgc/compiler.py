@@ -167,7 +167,8 @@ def _load_bin_file(filepath):
         with filepath.open('rb') as f:
             filedata = f.read()
     except FileNotFoundError:
-        raise CompileError(f"File not found: {str(filepath)}")
+        log('WARNING', f"File not found: {str(filepath)}")
+        return
     bin_files[filepath] = BINFile(filepath, filedata)
 
 def _load_asm_file(filepath):
@@ -303,7 +304,8 @@ def _cmd_process_asmsrc(data, mgcfile, line_number):
     return
 def _cmd_process_file(data, mgcfile, line_number):
     file = mgcfile.filepath.parent.joinpath(data[0])
-    _write_data(bin_files[file].filedata, mgcfile, line_number)
+    if file in bin_files:
+        _write_data(bin_files[file].filedata, mgcfile, line_number)
     return
 def _cmd_process_geckocodelist(data, mgcfile, line_number):
     file = mgcfile.filepath.parent.joinpath(data[0])
